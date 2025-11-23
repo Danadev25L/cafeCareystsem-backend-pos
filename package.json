@@ -1,0 +1,55 @@
+{
+  "name": "cafecare-backend",
+  "version": "1.0.0",
+  "main": "dist/server.js",
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "scripts": {
+    "dev": "nodemon src/server.ts",
+    "dev:ts": "ts-node src/server.ts",
+    "build": "tsc",
+    "postinstall": "prisma generate",
+    "start": "node dist/scripts/reset-and-deploy.js && node dist/server.js",
+    "start:fresh": "node dist/scripts/reset-and-deploy.js && node dist/server.js",
+    "start:server": "node dist/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:resolve": "ts-node src/scripts/resolve-migrations.ts",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:seed:images": "ts-node prisma/seed-with-images.ts",
+    "deploy": "prisma migrate deploy && prisma db seed"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "@types/multer": "^2.0.0",
+    "bcrypt": "^6.0.0",
+    "cloudinary": "^2.8.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.2.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "prisma": "^6.19.0",
+    "socket.io": "^4.8.1",
+    "ts-node": "^10.9.2",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^24.10.1",
+    "@types/nodemon": "^1.19.6",
+    "nodemon": "^3.1.11",
+    "typescript": "^5.9.3"
+  }
+}

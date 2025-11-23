@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(CASHIER)
+  name      String?
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  orderModifications OrderModification[]
+  reviewedFeedback CustomerFeedback[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  CAPTAIN
+  CASHIER
+}
+
+model Table {
+  id          Int      @id @default(autoincrement())
+  number      Int      @unique
+  name        String?
+  description String?
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MenuCategory {
+  id            Int        @id @default(autoincrement())
+  titleEn       String
+  titleKu       String
+  titleAr       String
+  image         String?
+  description   String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  menuItems     MenuItem[]
+}
+
+model MenuItem {
+  id            Int           @id @default(autoincrement())
+  nameEn        String
+  nameKu        String
+  nameAr        String
+  descriptionEn String?
+  descriptionKu String?
+  descriptionAr String?
+  price         Float
+  image         String?
+  categoryId    Int
+  category      MenuCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+  feedback      CustomerFeedback[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Order {
+  id            Int           @id @default(autoincrement())
+  tableId       Int
+  table         Table         @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  status        OrderStatus   @default(PENDING)
+  subtotal      Float
+  serviceCharge Float         @default(0)
+  total         Float
+  priority      String        @default("NORMAL") // "LOW", "NORMAL", "HIGH", "URGENT"
+  isRush        Boolean       @default(false)
+  items         OrderItem[]
+  modifications OrderModification[]
+  feedback      CustomerFeedback[]
+  preparationTime PreparationTime[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId Int
+  menuItem  MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceChargeSettings {
+  id              Int      @id @default(autoincrement())
+  threshold       Float    @default(10.0)
+  chargeAmount    Float    @default(0.0)
+  isPercentage    Boolean  @default(true)
+  percentageValue Float?   @default(0.0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model Analytics {
+  id                Int      @id @default(autoincrement())
+  date              DateTime @default(now())
+  totalOrders       Int      @default(0)
+  totalRevenue      Float    @default(0)
+  averageOrderValue Float    @default(0)
+  peakHour          Int?     // Hour of day (0-23)
+  ordersByStatus    Json?    // Store status counts
+  topItems          Json?    // Store most popular items
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([date])
+}
+
+model OrderModification {
+  id                Int       @id @default(autoincrement())
+  orderId           Int
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  originalItemId    Int?
+  originalQuantity  Int?
+  newQuantity       Int?
+  modificationType  String    // "ADD", "REMOVE", "MODIFY"
+  reason            String?
+  modifiedBy        Int
+  user              User      @relation(fields: [modifiedBy], references: [id])
+  createdAt         DateTime  @default(now())
+}
+
+model CustomerFeedback {
+  id                Int       @id @default(autoincrement())
+  orderId           Int?
+  order             Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId        Int?      // For item-level feedback
+  menuItem          MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  rating            Int       // 1-5 stars
+  comment           String?
+  feedbackType      String    // "QUALITY", "SERVICE", "AMBIANCE", "OVERALL", "ITEM"
+  status            String    @default("PENDING") // "PENDING", "REVIEWED", "RESOLVED"
+  reviewedBy        Int?
+  reviewer          User?     @relation(fields: [reviewedBy], references: [id])
+  reviewedAt        DateTime?
+  response          String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model PreparationTime {
+  id                Int       @id @default(autoincrement())
+  orderId           Int
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  startTime         DateTime?
+  endTime           DateTime?
+  duration          Int?      // Duration in minutes
+  status            String    // "PREPARING", "COMPLETED"
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
