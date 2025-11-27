@@ -60,6 +60,18 @@ const createOrder = async (req, res, next) => {
             throw new errors_1.NotFoundError('Table not found');
         }
         console.log('✅ Table found:', { id: table.id, number: table.number, name: table.name });
+        // Check if table already has a pending order
+        const existingOrder = await db_1.prisma.order.findFirst({
+            where: {
+                tableId,
+                status: 'PENDING',
+            },
+        });
+        if (existingOrder) {
+            console.error('❌ Table already has a pending order:', existingOrder.id);
+            throw new errors_1.ValidationError('This table already has a pending order. Please complete or cancel the existing order first.');
+        }
+        console.log('✅ No existing pending orders for this table');
         // Verify all menu items exist
         const menuItemIds = items.map((item) => item.menuItemId);
         const existingMenuItems = await db_1.prisma.menuItem.findMany({
