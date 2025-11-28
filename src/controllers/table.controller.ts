@@ -54,7 +54,9 @@ export const getAllTables = async (
         updatedAt: true,
         orders: {
           where: {
-            status: 'PENDING',
+            status: {
+              in: ['PENDING', 'PREPARING', 'READY'],
+            },
           },
           select: {
             id: true,
