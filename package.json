@@ -10,9 +10,10 @@
     "dev:ts": "ts-node src/server.ts",
     "build": "tsc",
     "postinstall": "prisma generate",
-    "start": "node dist/scripts/reset-and-deploy.js && node dist/server.js",
+    "start": "node dist/server.js",
     "start:fresh": "node dist/scripts/reset-and-deploy.js && node dist/server.js",
     "start:server": "node dist/server.js",
+    "reset:database": "node dist/scripts/reset-and-deploy.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
@@ -20,7 +21,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:seed:images": "ts-node prisma/seed-with-images.ts",
-    "deploy": "prisma migrate deploy && prisma db seed"
+    "deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
