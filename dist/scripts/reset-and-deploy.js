@@ -68,8 +68,8 @@ async function resetAndDeploy() {
                 migrationsSuccess = await runCommand('npx prisma migrate deploy', 'Applying database migrations', true);
             }
         }
-        // Step 3: Seed the database
-        await runCommand('npx prisma db seed', 'Seeding database with initial data', true);
+        // Step 3: Seed the database with images
+        await runCommand('npx ts-node prisma/seed-with-images.ts', 'Seeding database with initial data and images', true);
         // Step 4: Verify tables exist
         console.log('\n🔍 Verifying tables were created...');
         try {

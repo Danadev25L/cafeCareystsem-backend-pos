@@ -21,6 +21,7 @@ import publicRoutes from './routes/public.routes';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import { securityHeaders, requestLogger } from './middlewares/security.middleware';
 import { initializeSocket } from './utils/socket';
+import { execSync } from 'child_process';
 
 // Load environment variables - same path resolution as jwt.ts
 const envPath = resolve(process.cwd(), '.env');
@@ -194,9 +195,42 @@ app.use('/api/kitchen', kitchenRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-httpServer.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 CafeCare API Server running on port ${port}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+// Function to run seeder on deployment
+async function runSeederOnDeploy() {
+  // Only run seeder in production or when explicitly enabled
+  const shouldRunSeeder = process.env.NODE_ENV === 'production' || process.env.RUN_SEEDER_ON_START === 'true';
+
+  if (shouldRunSeeder) {
+    try {
+      console.log('🌱 Running seeder on server start...');
+      execSync('npx ts-node prisma/seed-with-images.ts', {
+        stdio: 'inherit',
+        env: process.env,
+        cwd: process.cwd()
+      });
+      console.log('✅ Seeder completed successfully!');
+    } catch (error: any) {
+      console.error('❌ Seeder failed:', error.message);
+      console.log('⚠️ Server will continue starting despite seeder failure...');
+    }
+  }
+}
+
+// Start server with seeder
+async function startServer() {
+  // Run seeder first if needed
+  await runSeederOnDeploy();
+
+  httpServer.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 CafeCare API Server running on port ${port}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
 });
 
 // Handle server errors

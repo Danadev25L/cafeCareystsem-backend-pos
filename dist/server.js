@@ -59,6 +59,7 @@ const public_routes_1 = __importDefault(require("./routes/public.routes"));
 const error_middleware_1 = require("./middlewares/error.middleware");
 const security_middleware_1 = require("./middlewares/security.middleware");
 const socket_1 = require("./utils/socket");
+const child_process_1 = require("child_process");
 // Load environment variables - same path resolution as jwt.ts
 const envPath = (0, path_1.resolve)(process.cwd(), '.env');
 dotenv_1.default.config({ path: envPath });
@@ -210,9 +211,39 @@ app.use('/api/kitchen', kitchen_routes_1.default);
 // Error Handling
 app.use(error_middleware_1.notFoundHandler);
 app.use(error_middleware_1.errorHandler);
-httpServer.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 CafeCare API Server running on port ${port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+// Function to run seeder on deployment
+async function runSeederOnDeploy() {
+    // Only run seeder in production or when explicitly enabled
+    const shouldRunSeeder = process.env.NODE_ENV === 'production' || process.env.RUN_SEEDER_ON_START === 'true';
+    if (shouldRunSeeder) {
+        try {
+            console.log('🌱 Running seeder on server start...');
+            (0, child_process_1.execSync)('npx ts-node prisma/seed-with-images.ts', {
+                stdio: 'inherit',
+                env: process.env,
+                cwd: process.cwd()
+            });
+            console.log('✅ Seeder completed successfully!');
+        }
+        catch (error) {
+            console.error('❌ Seeder failed:', error.message);
+            console.log('⚠️ Server will continue starting despite seeder failure...');
+        }
+    }
+}
+// Start server with seeder
+async function startServer() {
+    // Run seeder first if needed
+    await runSeederOnDeploy();
+    httpServer.listen(port, '0.0.0.0', () => {
+        console.log(`🚀 CafeCare API Server running on port ${port}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+    });
+}
+startServer().catch((error) => {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
 });
 // Handle server errors
 httpServer.on('error', (error) => {
