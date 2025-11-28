@@ -210,14 +210,18 @@ export const getAllOrders = async (
     const baseConditions: any = {};
 
     // Base conditions (status, tableId, date)
-    if (status) {
+    // If status is 'ALL', don't filter by status (show all orders)
+    // If status is a specific status, filter by that status
+    // If no status is provided, default to non-COMPLETED orders
+    if (status && status !== 'ALL') {
       baseConditions.status = status as OrderStatus;
-    } else {
-      // By default, only show non-COMPLETED orders for main orders view
+    } else if (!status) {
+      // By default (when status param is not provided at all), only show non-COMPLETED orders
       baseConditions.status = {
         in: [OrderStatus.PENDING, OrderStatus.PREPARING, OrderStatus.READY]
       };
     }
+    // If status === 'ALL', don't add any status condition (show all orders)
 
     if (tableId) {
       const tableIdNum = parseInt(tableId as string, 10);
