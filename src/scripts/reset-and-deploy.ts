@@ -70,10 +70,10 @@ async function resetAndDeploy() {
       }
     }
     
-    // Step 3: Seed the database
+    // Step 3: Seed the database with images
     await runCommand(
-      'npx prisma db seed',
-      'Seeding database with initial data',
+      'npx ts-node prisma/seed-with-images.ts',
+      'Seeding database with initial data and images',
       true
     );
     
