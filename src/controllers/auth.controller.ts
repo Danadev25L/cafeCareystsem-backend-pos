@@ -22,10 +22,8 @@ export const registerValidation = [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters'),
-  body('role')
-    .optional()
-    .isIn(['ADMIN', 'CAPTAIN', 'CASHIER'])
-    .withMessage('Invalid role'),
+  // SECURITY: Remove role validation from public registration
+  // All public registrations default to CASHIER role
 ];
 
 export const loginValidation = [
@@ -57,10 +55,28 @@ export const register = async (
     const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
     const hashedPassword = await bcrypt.hash(password, bcryptRounds);
 
+    // SECURITY: Only allow CASHIER role for public registration
+    // ADMIN users must be created by existing admins only
     const userRole = role || Role.CASHIER;
-    
-    if (userRole === Role.ADMIN && req.user?.role !== Role.ADMIN) {
-      throw new UnauthorizedError('Only admins can create admin users');
+
+    if (userRole === Role.ADMIN) {
+      console.log('🚨 SECURITY: Attempted admin account creation via public registration:', {
+        email,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        timestamp: new Date().toISOString()
+      });
+      throw new UnauthorizedError('Admin users can only be created by existing admins through admin panel');
+    }
+
+    if (userRole === Role.CAPTAIN) {
+      console.log('🚨 SECURITY: Attempted captain account creation via public registration:', {
+        email,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        timestamp: new Date().toISOString()
+      });
+      throw new UnauthorizedError('Captain users can only be created by admins');
     }
 
     const user = await prisma.user.create({

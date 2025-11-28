@@ -25,10 +25,8 @@ exports.registerValidation = [
         .trim()
         .isLength({ min: 2, max: 100 })
         .withMessage('Name must be between 2 and 100 characters'),
-    (0, express_validator_1.body)('role')
-        .optional()
-        .isIn(['ADMIN', 'CAPTAIN', 'CASHIER'])
-        .withMessage('Invalid role'),
+    // SECURITY: Remove role validation from public registration
+    // All public registrations default to CASHIER role
 ];
 exports.loginValidation = [
     (0, express_validator_1.body)('email')
@@ -50,9 +48,26 @@ const register = async (req, res, next) => {
         }
         const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
         const hashedPassword = await bcrypt_1.default.hash(password, bcryptRounds);
+        // SECURITY: Only allow CASHIER role for public registration
+        // ADMIN users must be created by existing admins only
         const userRole = role || types_1.Role.CASHIER;
-        if (userRole === types_1.Role.ADMIN && req.user?.role !== types_1.Role.ADMIN) {
-            throw new errors_1.UnauthorizedError('Only admins can create admin users');
+        if (userRole === types_1.Role.ADMIN) {
+            console.log('🚨 SECURITY: Attempted admin account creation via public registration:', {
+                email,
+                ip: req.ip,
+                userAgent: req.get('User-Agent'),
+                timestamp: new Date().toISOString()
+            });
+            throw new errors_1.UnauthorizedError('Admin users can only be created by existing admins through admin panel');
+        }
+        if (userRole === types_1.Role.CAPTAIN) {
+            console.log('🚨 SECURITY: Attempted captain account creation via public registration:', {
+                email,
+                ip: req.ip,
+                userAgent: req.get('User-Agent'),
+                timestamp: new Date().toISOString()
+            });
+            throw new errors_1.UnauthorizedError('Captain users can only be created by admins');
         }
         const user = await db_1.prisma.user.create({
             data: {

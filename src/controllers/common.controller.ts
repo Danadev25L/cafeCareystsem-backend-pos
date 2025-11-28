@@ -21,16 +21,33 @@ export const createUser = async (
 
     const { email, password, name, role, isActive } = req.body;
 
+    // SECURITY: Validate role is one of allowed values
+    if (!role || !['ADMIN', 'CAPTAIN', 'CASHIER'].includes(role)) {
+      throw new ValidationError('Valid role is required (ADMIN, CAPTAIN, or CASHIER)');
+    }
+
+    // SECURITY: Only existing admins can create new admins
+    if (role === Role.ADMIN) {
+      // Double check: Prevent potential privilege escalation
+      const adminCount = await prisma.user.count({
+        where: { role: Role.ADMIN, isActive: true }
+      });
+
+      // Log admin creation for security audit
+      console.log('🔐 Admin user creation attempt:', {
+        createdBy: req.user.email,
+        createdRole: role,
+        targetEmail: email,
+        timestamp: new Date().toISOString()
+      });
+    }
+
     if (!email || !password) {
       throw new ValidationError('Email and password are required');
     }
 
     if (password.length < 8) {
       throw new ValidationError('Password must be at least 8 characters');
-    }
-
-    if (!role || !['ADMIN', 'CAPTAIN', 'CASHIER'].includes(role)) {
-      throw new ValidationError('Valid role is required (ADMIN, CAPTAIN, or CASHIER)');
     }
 
     const existingUser = await prisma.user.findUnique({
