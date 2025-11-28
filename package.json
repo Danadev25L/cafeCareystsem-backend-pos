@@ -11,6 +11,7 @@
     "build": "tsc",
     "postinstall": "prisma generate",
     "start": "node dist/server.js",
+    
     "start:fresh": "node dist/scripts/reset-and-deploy.js && node dist/server.js",
     "start:server": "node dist/server.js",
     "reset:database": "node dist/scripts/reset-and-deploy.js",
