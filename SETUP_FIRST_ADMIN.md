@@ -63,10 +63,9 @@ If you're getting 401 Unauthorized errors:
    - Look for error messages when you try to log in
    - Common issues: database connection, password hashing, user not found
 
-4. **Reset and reseed the database:**
+4. **Reseed the database (if needed):**
    ```bash
    cd cafeCareystsem-backend
-   npx prisma migrate reset --force
    npm run prisma:seed:images
    ```
 
