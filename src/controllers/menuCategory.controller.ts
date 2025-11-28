@@ -240,16 +240,58 @@ export const deleteMenuCategory = async (
 
     const existingCategory = await prisma.menuCategory.findUnique({
       where: { id: categoryId },
+      include: {
+        menuItems: {
+          select: {
+            id: true,
+            image: true,
+          },
+        },
+      },
     });
 
     if (!existingCategory) {
       throw new NotFoundError('Menu category not found');
     }
 
+    // Delete category image from Cloudinary
     if (existingCategory.image) {
       await deleteFromCloudinary(existingCategory.image);
     }
 
+    // Get all menu item IDs in this category
+    const menuItemIds = existingCategory.menuItems.map(item => item.id);
+
+    // Delete all OrderItems that reference MenuItems in this category
+    // This must be done before deleting the menu items to avoid foreign key constraint violations
+    if (menuItemIds.length > 0) {
+      await prisma.orderItem.deleteMany({
+        where: {
+          menuItemId: {
+            in: menuItemIds,
+          },
+        },
+      });
+    }
+
+    // Delete menu item images from Cloudinary
+    for (const menuItem of existingCategory.menuItems) {
+      if (menuItem.image) {
+        await deleteFromCloudinary(menuItem.image);
+      }
+    }
+
+    // Delete all menu items in this category
+    // This will cascade from the category, but we're doing it explicitly to ensure proper order
+    if (menuItemIds.length > 0) {
+      await prisma.menuItem.deleteMany({
+        where: {
+          categoryId: categoryId,
+        },
+      });
+    }
+
+    // Finally, delete the category
     await prisma.menuCategory.delete({
       where: { id: categoryId },
     });

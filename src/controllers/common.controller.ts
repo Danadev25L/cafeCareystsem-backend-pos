@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
+import { body } from 'express-validator';
 import { prisma } from '../utils/db';
 import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '../utils/errors';
 import { AuthRequest } from '../middlewares/auth.middleware';
@@ -50,8 +51,27 @@ export const createUser = async (
       throw new ValidationError('Password must be at least 8 characters');
     }
 
+    // Normalize email to lowercase to match login validation
+    // This ensures emails are stored consistently (e.g., "Test@Example.com" -> "test@example.com")
+    // express-validator's normalizeEmail() does the same thing during login
+    // IMPORTANT: Must match exactly how express-validator normalizes emails
+    const normalizedEmail = email ? email.toLowerCase().trim() : '';
+    
+    if (!normalizedEmail) {
+      throw new ValidationError('Valid email is required');
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('👤 Creating user:', { 
+        originalEmail: email, 
+        normalizedEmail, 
+        role,
+        createdBy: req.user.email 
+      });
+    }
+
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -63,7 +83,7 @@ export const createUser = async (
 
     const user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         name: name || null,
         role: role as Role,

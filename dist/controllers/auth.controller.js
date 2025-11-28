@@ -111,18 +111,60 @@ exports.register = register;
 const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const user = await db_1.prisma.user.findUnique({
-            where: { email },
+        // express-validator's normalizeEmail() should have already normalized req.body.email
+        // But we'll normalize it again to ensure consistency with how users are stored
+        // Use the same normalization as express-validator (lowercase + trim)
+        const normalizedEmail = email ? email.toLowerCase().trim() : '';
+        // Log login attempt for debugging (in development)
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🔐 Login attempt:', {
+                emailFromBody: email,
+                normalizedEmail,
+                timestamp: new Date().toISOString()
+            });
+        }
+        // Try to find user with normalized email (this is how new users are stored)
+        let user = await db_1.prisma.user.findUnique({
+            where: { email: normalizedEmail },
         });
+        // If not found, try the email as-is (for backward compatibility with old users)
+        if (!user && email && email !== normalizedEmail) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('⚠️ User not found with normalized email, trying original:', email);
+            }
+            user = await db_1.prisma.user.findUnique({
+                where: { email },
+            });
+        }
         if (!user) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('❌ Login failed: User not found:', {
+                    originalEmail: email,
+                    normalizedEmail,
+                    searchedEmails: [normalizedEmail, email !== normalizedEmail ? email : null].filter(Boolean)
+                });
+            }
             throw new errors_1.UnauthorizedError('Invalid email or password');
         }
         if (!user.isActive) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('❌ Login failed: Account deactivated:', { email: user.email });
+            }
             throw new errors_1.UnauthorizedError('Account is deactivated');
         }
         const isPasswordValid = await bcrypt_1.default.compare(password, user.password);
         if (!isPasswordValid) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('❌ Login failed: Invalid password for:', {
+                    email: user.email,
+                    passwordProvided: !!password,
+                    passwordLength: password?.length
+                });
+            }
             throw new errors_1.UnauthorizedError('Invalid email or password');
+        }
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Login successful:', { email, role: user.role });
         }
         await db_1.prisma.user.update({
             where: { id: user.id },
