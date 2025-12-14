@@ -23,9 +23,10 @@ router.patch('/:id/status', (req, res, next) => {
     });
     next();
 }, auth_middleware_1.requireBarista, order_controller_1.updateOrderStatus);
-router.post('/:id/items', auth_middleware_1.requireCaptain, (0, validation_middleware_1.validate)(order_controller_1.addItemsToOrderValidation), order_controller_1.addItemsToOrder);
-router.patch('/:orderId/items/:itemId', auth_middleware_1.requireCaptain, (0, validation_middleware_1.validate)(order_controller_1.updateOrderItemValidation), order_controller_1.updateOrderItem);
-router.delete('/:orderId/items/:itemId', auth_middleware_1.requireCaptain, order_controller_1.deleteOrderItem);
+// Allow CASHIER, CAPTAIN, and ADMIN to edit orders (add, update, delete items)
+router.post('/:id/items', (0, auth_middleware_1.authorize)(types_1.Role.CASHIER, types_1.Role.CAPTAIN, types_1.Role.ADMIN), (0, validation_middleware_1.validate)(order_controller_1.addItemsToOrderValidation), order_controller_1.addItemsToOrder);
+router.patch('/:orderId/items/:itemId', (0, auth_middleware_1.authorize)(types_1.Role.CASHIER, types_1.Role.CAPTAIN, types_1.Role.ADMIN), (0, validation_middleware_1.validate)(order_controller_1.updateOrderItemValidation), order_controller_1.updateOrderItem);
+router.delete('/:orderId/items/:itemId', (0, auth_middleware_1.authorize)(types_1.Role.CASHIER, types_1.Role.CAPTAIN, types_1.Role.ADMIN), order_controller_1.deleteOrderItem);
 router.delete('/:id', auth_middleware_1.requireCaptain, order_controller_1.deleteOrder);
 exports.default = router;
 //# sourceMappingURL=order.routes.js.map
