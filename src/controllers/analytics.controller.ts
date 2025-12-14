@@ -22,7 +22,11 @@ type OrderWithRelations = {
   table: {
     id: number;
     number: number;
-  };
+    description: string | null;
+    name: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
 };
 
 type OrderWithItems = {
@@ -344,25 +348,25 @@ export const getDetailedReport = async (
         },
         table: true,
       },
-    });
+    }) as OrderWithRelations[];
 
-    const completedOrders = orders.filter((order: OrderWithRelations) => order.status === 'COMPLETED');
+    const completedOrders = orders.filter((order) => order.status === 'COMPLETED');
 
     // Calculate various metrics
     const metrics = {
       totalOrders: orders.length,
       completedOrders: completedOrders.length,
-      cancelledOrders: orders.filter((order: OrderWithRelations) => order.status === 'CANCELLED').length,
-      totalRevenue: completedOrders.reduce((sum: number, order: OrderWithRelations) => sum + order.total, 0),
+      cancelledOrders: orders.filter((order) => order.status === 'CANCELLED').length,
+      totalRevenue: completedOrders.reduce((sum: number, order) => sum + order.total, 0),
       averageOrderValue: completedOrders.length > 0
-        ? completedOrders.reduce((sum: number, order: OrderWithRelations) => sum + order.total, 0) / completedOrders.length
+        ? completedOrders.reduce((sum: number, order) => sum + order.total, 0) / completedOrders.length
         : 0,
       averagePreparationTime: 0, // TODO: Calculate from preparation times
       tableTurnover: 0, // TODO: Calculate table turnover times
     };
 
     // Per-item analysis
-    const itemAnalysis = completedOrders.flatMap((order: OrderWithRelations) =>
+    const itemAnalysis = completedOrders.flatMap((order) =>
       order.items.map(item => ({
         id: item.menuItem.id,
         name: item.menuItem.nameEn, // Default to English for analytics

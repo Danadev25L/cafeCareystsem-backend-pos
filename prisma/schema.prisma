@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,23 +8,17 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  role      Role     @default(CASHIER)
-  name      String?
-  isActive  Boolean  @default(true)
-  lastLogin DateTime?
+  id                 Int                 @id @default(autoincrement())
+  email              String              @unique
+  password           String
+  role               Role                @default(CASHIER)
+  name               String?
+  isActive           Boolean             @default(true)
+  lastLogin          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  reviewedFeedback   CustomerFeedback[]
   orderModifications OrderModification[]
-  reviewedFeedback CustomerFeedback[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-enum Role {
-  ADMIN
-  CAPTAIN
-  CASHIER
 }
 
 model Table {
@@ -38,25 +26,25 @@ model Table {
   number      Int      @unique
   name        String?
   description String?
-  orders      Order[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  orders      Order[]
 }
 
 model MenuCategory {
-  id            Int        @id @default(autoincrement())
-  titleEn       String
-  titleKu       String
-  titleAr       String
-  image         String?
-  description   String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  menuItems     MenuItem[]
+  id          Int        @id @default(autoincrement())
+  titleEn     String
+  titleKu     String
+  titleAr     String
+  image       String?
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  menuItems   MenuItem[]
 }
 
 model MenuItem {
-  id            Int           @id @default(autoincrement())
+  id            Int                @id @default(autoincrement())
   nameEn        String
   nameKu        String
   nameAr        String
@@ -66,41 +54,41 @@ model MenuItem {
   price         Float
   image         String?
   categoryId    Int
-  category      MenuCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  orderItems    OrderItem[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   feedback      CustomerFeedback[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  category      MenuCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
 }
 
 model Order {
-  id            Int           @id @default(autoincrement())
-  tableId       Int
-  table         Table         @relation(fields: [tableId], references: [id], onDelete: Cascade)
-  status        OrderStatus   @default(PENDING)
-  subtotal      Float
-  serviceCharge Float         @default(0)
-  total         Float
-  priority      String        @default("NORMAL") // "LOW", "NORMAL", "HIGH", "URGENT"
-  isRush        Boolean       @default(false)
-  items         OrderItem[]
-  modifications OrderModification[]
-  feedback      CustomerFeedback[]
+  id              Int                 @id @default(autoincrement())
+  tableId         Int?
+  status          OrderStatus         @default(PENDING)
+  subtotal        Float
+  serviceCharge   Float               @default(0)
+  total           Float
+  priority        String              @default("NORMAL")
+  isRush          Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  feedback        CustomerFeedback[]
+  table           Table?              @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  items           OrderItem[]
+  modifications   OrderModification[]
   preparationTime PreparationTime[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
-  orderId   Int
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  orderId    Int
   menuItemId Int
-  menuItem  MenuItem @relation(fields: [menuItemId], references: [id])
-  quantity  Int
-  price     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  quantity   Int
+  price      Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model ServiceChargeSettings {
@@ -114,69 +102,89 @@ model ServiceChargeSettings {
   updatedAt       DateTime @updatedAt
 }
 
+model DiscountSettings {
+  id              Int       @id @default(autoincrement())
+  threshold       Float     @default(0.0)
+  discountAmount  Float     @default(0.0)
+  isPercentage    Boolean   @default(true)
+  percentageValue Float?    @default(0.0)
+  isActive        Boolean   @default(true)
+  isAllItems      Boolean   @default(true)
+  menuItemIds     Json?     // Array of menu item IDs for individual item discounts
+  specificDates   Json?     // Array of specific dates (e.g., ["2024-12-25", "2024-12-31"])
+  startDate       DateTime? // Start date for date range
+  endDate         DateTime? // End date for date range
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Analytics {
+  id                Int      @id @default(autoincrement())
+  date              DateTime @unique @default(now())
+  totalOrders       Int      @default(0)
+  totalRevenue      Float    @default(0)
+  averageOrderValue Float    @default(0)
+  peakHour          Int?
+  ordersByStatus    Json?
+  topItems          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model OrderModification {
+  id               Int      @id @default(autoincrement())
+  orderId          Int
+  originalItemId   Int?
+  originalQuantity Int?
+  newQuantity      Int?
+  modificationType String
+  reason           String?
+  modifiedBy       Int
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [modifiedBy], references: [id])
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model CustomerFeedback {
+  id           Int       @id @default(autoincrement())
+  orderId      Int?
+  menuItemId   Int?
+  rating       Int
+  comment      String?
+  feedbackType String
+  status       String    @default("PENDING")
+  reviewedBy   Int?
+  reviewedAt   DateTime?
+  response     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  menuItem     MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  order        Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reviewer     User?     @relation(fields: [reviewedBy], references: [id])
+}
+
+model PreparationTime {
+  id        Int       @id @default(autoincrement())
+  orderId   Int
+  startTime DateTime?
+  endTime   DateTime?
+  duration  Int?
+  status    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  CAPTAIN
+  CASHIER
+}
+
 enum OrderStatus {
   PENDING
   PREPARING
   READY
   COMPLETED
   CANCELLED
-}
-
-model Analytics {
-  id                Int      @id @default(autoincrement())
-  date              DateTime @default(now())
-  totalOrders       Int      @default(0)
-  totalRevenue      Float    @default(0)
-  averageOrderValue Float    @default(0)
-  peakHour          Int?     // Hour of day (0-23)
-  ordersByStatus    Json?    // Store status counts
-  topItems          Json?    // Store most popular items
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@unique([date])
-}
-
-model OrderModification {
-  id                Int       @id @default(autoincrement())
-  orderId           Int
-  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  originalItemId    Int?
-  originalQuantity  Int?
-  newQuantity       Int?
-  modificationType  String    // "ADD", "REMOVE", "MODIFY"
-  reason            String?
-  modifiedBy        Int
-  user              User      @relation(fields: [modifiedBy], references: [id])
-  createdAt         DateTime  @default(now())
-}
-
-model CustomerFeedback {
-  id                Int       @id @default(autoincrement())
-  orderId           Int?
-  order             Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItemId        Int?      // For item-level feedback
-  menuItem          MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
-  rating            Int       // 1-5 stars
-  comment           String?
-  feedbackType      String    // "QUALITY", "SERVICE", "AMBIANCE", "OVERALL", "ITEM"
-  status            String    @default("PENDING") // "PENDING", "REVIEWED", "RESOLVED"
-  reviewedBy        Int?
-  reviewer          User?     @relation(fields: [reviewedBy], references: [id])
-  reviewedAt        DateTime?
-  response          String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-}
-
-model PreparationTime {
-  id                Int       @id @default(autoincrement())
-  orderId           Int
-  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  startTime         DateTime?
-  endTime           DateTime?
-  duration          Int?      // Duration in minutes
-  status            String    // "PREPARING", "COMPLETED"
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
 }

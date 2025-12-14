@@ -150,6 +150,34 @@ async function main() {
     }
   }
 
+  console.log('Creating default settings...');
+
+  // Create default service charge settings
+  await prisma.serviceChargeSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      threshold: 10.0,
+      chargeAmount: 1.0,
+      isPercentage: false,
+      isActive: true,
+    },
+  });
+
+  // Create default discount settings
+  await prisma.discountSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      threshold: 0.0,
+      discountAmount: 0.0,
+      isPercentage: true,
+      percentageValue: 0.0,
+      isActive: true,
+      isAllItems: true,
+    },
+  });
+
   console.log('Database seeding completed successfully!');
 }
 

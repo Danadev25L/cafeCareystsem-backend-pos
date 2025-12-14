@@ -51,6 +51,7 @@ const menuCategory_routes_1 = __importDefault(require("./routes/menuCategory.rou
 const menuItem_routes_1 = __importDefault(require("./routes/menuItem.routes"));
 const order_routes_1 = __importDefault(require("./routes/order.routes"));
 const serviceCharge_routes_1 = __importDefault(require("./routes/serviceCharge.routes"));
+const discount_routes_1 = __importDefault(require("./routes/discount.routes"));
 const analytics_routes_1 = __importDefault(require("./routes/analytics.routes"));
 const order_modifications_routes_1 = __importDefault(require("./routes/order-modifications.routes"));
 const quality_control_routes_1 = __importDefault(require("./routes/quality-control.routes"));
@@ -204,6 +205,7 @@ app.use('/api/menu-categories', menuCategory_routes_1.default);
 app.use('/api/menu-items', menuItem_routes_1.default);
 app.use('/api/orders', order_routes_1.default);
 app.use('/api/service-charge-settings', serviceCharge_routes_1.default);
+app.use('/api/discount-settings', discount_routes_1.default);
 app.use('/api/analytics', analytics_routes_1.default);
 app.use('/api/order-modifications', order_modifications_routes_1.default);
 app.use('/api/quality', quality_control_routes_1.default);

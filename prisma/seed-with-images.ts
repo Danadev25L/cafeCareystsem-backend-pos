@@ -7,11 +7,22 @@ async function main() {
   console.log('🌟 Starting enhanced database seeding with images...');
 
   // Clear existing data for fresh seed
+  // Must delete in order to respect foreign key constraints
   console.log('🧹 Clearing existing data...');
+  
+  // Delete in order: child tables first, then parent tables
+  await prisma.orderItem.deleteMany();
+  await prisma.customerFeedback.deleteMany();
+  await prisma.orderModification.deleteMany();
+  await prisma.preparationTime.deleteMany();
+  await prisma.order.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.menuCategory.deleteMany();
-  await prisma.user.deleteMany();
   await prisma.table.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.analytics.deleteMany();
+  await prisma.serviceChargeSettings.deleteMany();
+  
   console.log('✅ Cleared existing data');
 
   // Create users with different roles

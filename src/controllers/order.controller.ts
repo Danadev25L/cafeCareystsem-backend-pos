@@ -8,8 +8,16 @@ import { emitOrderCreated, emitOrderUpdated, emitOrderDeleted, emitOrderReady } 
 
 export const createOrderValidation = [
   body('tableId')
-    .isInt({ min: 1 })
-    .withMessage('Table ID must be a positive integer'),
+    .optional()
+    .custom((value) => {
+      if (value === null || value === undefined || value === 0) {
+        return true; // Allow null/0 for walk-in orders
+      }
+      if (Number.isInteger(Number(value)) && Number(value) > 0) {
+        return true;
+      }
+      throw new Error('Table ID must be a positive integer, 0, or null');
+    }),
   body('items')
     .isArray({ min: 1 })
     .withMessage('Order must have at least one item'),
@@ -42,12 +50,11 @@ export const createOrder = async (
 ): Promise<void> => {
   try {
     console.log('📦 Creating order - Request body:', JSON.stringify(req.body, null, 2));
-    const { tableId, items, subtotal, serviceCharge, total, priority = 'NORMAL', isRush = false } = req.body;
+    const { tableId, items, subtotal, serviceCharge, total, priority = 'NORMAL', isRush = false, isWalkIn = false } = req.body;
 
-    if (!tableId) {
-      console.error('❌ Missing tableId in request');
-      throw new ValidationError('Table ID is required');
-    }
+    // Handle walk-in orders (no table required)
+    const isWalkInOrder = isWalkIn || !tableId || tableId === 0 || tableId === null;
+    const finalTableId = isWalkInOrder ? null : tableId;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       console.error('❌ Invalid or empty items array');
@@ -60,32 +67,37 @@ export const createOrder = async (
       price: item.price
     })));
 
-    // Verify table exists
-    const table = await prisma.table.findUnique({
-      where: { id: tableId },
-    });
+    // For walk-in orders, skip table validation
+    if (!isWalkInOrder) {
+      // Verify table exists
+      const table = await prisma.table.findUnique({
+        where: { id: tableId },
+      });
 
-    if (!table) {
-      console.error('❌ Table not found:', tableId);
-      throw new NotFoundError('Table not found');
+      if (!table) {
+        console.error('❌ Table not found:', tableId);
+        throw new NotFoundError('Table not found');
+      }
+
+      console.log('✅ Table found:', { id: table.id, number: table.number, name: table.name });
+
+      // Check if table already has a pending order
+      const existingOrder = await prisma.order.findFirst({
+        where: {
+          tableId,
+          status: 'PENDING',
+        },
+      });
+
+      if (existingOrder) {
+        console.error('❌ Table already has a pending order:', existingOrder.id);
+        throw new ValidationError('This table already has a pending order. Please complete or cancel the existing order first.');
+      }
+
+      console.log('✅ No existing pending orders for this table');
+    } else {
+      console.log('✅ Walk-in order - skipping table validation');
     }
-
-    console.log('✅ Table found:', { id: table.id, number: table.number, name: table.name });
-
-    // Check if table already has a pending order
-    const existingOrder = await prisma.order.findFirst({
-      where: {
-        tableId,
-        status: 'PENDING',
-      },
-    });
-
-    if (existingOrder) {
-      console.error('❌ Table already has a pending order:', existingOrder.id);
-      throw new ValidationError('This table already has a pending order. Please complete or cancel the existing order first.');
-    }
-
-    console.log('✅ No existing pending orders for this table');
 
     // Verify all menu items exist
     const menuItemIds = items.map((item: any) => item.menuItemId);
@@ -122,23 +134,31 @@ export const createOrder = async (
 
     // Create order with items
     console.log('📦 Creating order in database...');
-    const order = await prisma.order.create({
-      data: {
-        tableId,
-        subtotal: calculatedSubtotal,
-        serviceCharge: serviceChargeValue,
-        total: calculatedTotal,
-        status: OrderStatus.PENDING,
-        priority,
-        isRush,
-        items: {
-          create: items.map((item: { menuItemId: number; quantity: number; price: number }) => ({
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        },
+    const orderData: any = {
+      subtotal: calculatedSubtotal,
+      serviceCharge: serviceChargeValue,
+      total: calculatedTotal,
+      status: OrderStatus.PENDING,
+      priority,
+      isRush,
+      items: {
+        create: items.map((item: { menuItemId: number; quantity: number; price: number }) => ({
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
       },
+    };
+
+    // Only include tableId if it's not a walk-in order
+    // For walk-in orders, tableId is null (no table assignment)
+    if (!isWalkInOrder && finalTableId) {
+      orderData.tableId = finalTableId;
+    }
+    // For walk-in orders, tableId is not set (will be null in database)
+
+    const order = await prisma.order.create({
+      data: orderData,
       include: {
         table: {
           select: {
@@ -435,7 +455,7 @@ export const getAllOrders = async (
         console.log('✅ Orders returned:', orders.map((o: { id: number; status: string; table?: { number: number } | null; updatedAt: Date }) => ({
           id: o.id,
           status: o.status,
-          tableNumber: o.table?.number,
+          tableNumber: o.table?.number || null,
           updatedAt: o.updatedAt.toISOString()
         })));
       } else {
@@ -1061,8 +1081,8 @@ export const printReceipt = async (
     // Format receipt data for Xprinter (4 columns: Item Name | Quantity | Single Price | Total)
     const receipt = {
       orderId: order.id,
-      tableNumber: order.table.number,
-      tableName: order.table.name,
+      tableNumber: order.table?.number || null,
+      tableName: order.table?.name || 'Walk-in',
       date: order.createdAt.toISOString(),
       items: order.items.map((item: { menuItem: { nameEn: string; nameKu: string; nameAr: string }; quantity: number; price: number }) => ({
         name: item.menuItem.nameEn, // Default to English for receipts

@@ -8,8 +8,16 @@ const types_1 = require("../types");
 const socket_1 = require("../utils/socket");
 exports.createOrderValidation = [
     (0, express_validator_1.body)('tableId')
-        .isInt({ min: 1 })
-        .withMessage('Table ID must be a positive integer'),
+        .optional()
+        .custom((value) => {
+        if (value === null || value === undefined || value === 0) {
+            return true; // Allow null/0 for walk-in orders
+        }
+        if (Number.isInteger(Number(value)) && Number(value) > 0) {
+            return true;
+        }
+        throw new Error('Table ID must be a positive integer, 0, or null');
+    }),
     (0, express_validator_1.body)('items')
         .isArray({ min: 1 })
         .withMessage('Order must have at least one item'),
@@ -37,11 +45,10 @@ exports.createOrderValidation = [
 const createOrder = async (req, res, next) => {
     try {
         console.log('📦 Creating order - Request body:', JSON.stringify(req.body, null, 2));
-        const { tableId, items, subtotal, serviceCharge, total, priority = 'NORMAL', isRush = false } = req.body;
-        if (!tableId) {
-            console.error('❌ Missing tableId in request');
-            throw new errors_1.ValidationError('Table ID is required');
-        }
+        const { tableId, items, subtotal, serviceCharge, total, priority = 'NORMAL', isRush = false, isWalkIn = false } = req.body;
+        // Handle walk-in orders (no table required)
+        const isWalkInOrder = isWalkIn || !tableId || tableId === 0 || tableId === null;
+        const finalTableId = isWalkInOrder ? null : tableId;
         if (!items || !Array.isArray(items) || items.length === 0) {
             console.error('❌ Invalid or empty items array');
             throw new errors_1.ValidationError('Order must have at least one item');
@@ -51,27 +58,33 @@ const createOrder = async (req, res, next) => {
             quantity: item.quantity,
             price: item.price
         })));
-        // Verify table exists
-        const table = await db_1.prisma.table.findUnique({
-            where: { id: tableId },
-        });
-        if (!table) {
-            console.error('❌ Table not found:', tableId);
-            throw new errors_1.NotFoundError('Table not found');
+        // For walk-in orders, skip table validation
+        if (!isWalkInOrder) {
+            // Verify table exists
+            const table = await db_1.prisma.table.findUnique({
+                where: { id: tableId },
+            });
+            if (!table) {
+                console.error('❌ Table not found:', tableId);
+                throw new errors_1.NotFoundError('Table not found');
+            }
+            console.log('✅ Table found:', { id: table.id, number: table.number, name: table.name });
+            // Check if table already has a pending order
+            const existingOrder = await db_1.prisma.order.findFirst({
+                where: {
+                    tableId,
+                    status: 'PENDING',
+                },
+            });
+            if (existingOrder) {
+                console.error('❌ Table already has a pending order:', existingOrder.id);
+                throw new errors_1.ValidationError('This table already has a pending order. Please complete or cancel the existing order first.');
+            }
+            console.log('✅ No existing pending orders for this table');
         }
-        console.log('✅ Table found:', { id: table.id, number: table.number, name: table.name });
-        // Check if table already has a pending order
-        const existingOrder = await db_1.prisma.order.findFirst({
-            where: {
-                tableId,
-                status: 'PENDING',
-            },
-        });
-        if (existingOrder) {
-            console.error('❌ Table already has a pending order:', existingOrder.id);
-            throw new errors_1.ValidationError('This table already has a pending order. Please complete or cancel the existing order first.');
+        else {
+            console.log('✅ Walk-in order - skipping table validation');
         }
-        console.log('✅ No existing pending orders for this table');
         // Verify all menu items exist
         const menuItemIds = items.map((item) => item.menuItemId);
         const existingMenuItems = await db_1.prisma.menuItem.findMany({
@@ -97,23 +110,29 @@ const createOrder = async (req, res, next) => {
         }
         // Create order with items
         console.log('📦 Creating order in database...');
-        const order = await db_1.prisma.order.create({
-            data: {
-                tableId,
-                subtotal: calculatedSubtotal,
-                serviceCharge: serviceChargeValue,
-                total: calculatedTotal,
-                status: types_1.OrderStatus.PENDING,
-                priority,
-                isRush,
-                items: {
-                    create: items.map((item) => ({
-                        menuItemId: item.menuItemId,
-                        quantity: item.quantity,
-                        price: item.price,
-                    })),
-                },
+        const orderData = {
+            subtotal: calculatedSubtotal,
+            serviceCharge: serviceChargeValue,
+            total: calculatedTotal,
+            status: types_1.OrderStatus.PENDING,
+            priority,
+            isRush,
+            items: {
+                create: items.map((item) => ({
+                    menuItemId: item.menuItemId,
+                    quantity: item.quantity,
+                    price: item.price,
+                })),
             },
+        };
+        // Only include tableId if it's not a walk-in order
+        // For walk-in orders, tableId is null (no table assignment)
+        if (!isWalkInOrder && finalTableId) {
+            orderData.tableId = finalTableId;
+        }
+        // For walk-in orders, tableId is not set (will be null in database)
+        const order = await db_1.prisma.order.create({
+            data: orderData,
             include: {
                 table: {
                     select: {
@@ -377,7 +396,7 @@ const getAllOrders = async (req, res, next) => {
                 console.log('✅ Orders returned:', orders.map((o) => ({
                     id: o.id,
                     status: o.status,
-                    tableNumber: o.table?.number,
+                    tableNumber: o.table?.number || null,
                     updatedAt: o.updatedAt.toISOString()
                 })));
             }
@@ -915,8 +934,8 @@ const printReceipt = async (req, res, next) => {
         // Format receipt data for Xprinter (4 columns: Item Name | Quantity | Single Price | Total)
         const receipt = {
             orderId: order.id,
-            tableNumber: order.table.number,
-            tableName: order.table.name,
+            tableNumber: order.table?.number || null,
+            tableName: order.table?.name || 'Walk-in',
             date: order.createdAt.toISOString(),
             items: order.items.map((item) => ({
                 name: item.menuItem.nameEn, // Default to English for receipts

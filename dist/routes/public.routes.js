@@ -64,5 +64,29 @@ router.post('/feedback', async (req, res, next) => {
         next(error);
     }
 });
+// Public discount settings endpoint (no authentication required)
+router.get('/discount-settings', async (req, res, next) => {
+    try {
+        let settings = await db_1.prisma.discountSettings.findFirst({
+            where: { isActive: true },
+            orderBy: { updatedAt: 'desc' },
+        });
+        // If no settings exist, return null
+        if (!settings) {
+            res.json({
+                success: true,
+                data: { settings: null },
+            });
+            return;
+        }
+        res.json({
+            success: true,
+            data: { settings },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 exports.default = router;
 //# sourceMappingURL=public.routes.js.map
