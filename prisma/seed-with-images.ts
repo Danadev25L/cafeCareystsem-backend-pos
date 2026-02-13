@@ -29,37 +29,37 @@ async function main() {
   console.log('👥 Creating users...');
   const users = [
     {
-      email: 'admin@cafecare.com',
+      email: 'admin@cafesystem.com',
       password: 'admin123',
       name: 'Admin User',
       role: 'ADMIN' as const,
     },
     {
-      email: 'captain@cafecare.com',
+      email: 'captain@cafesystem.com',
       password: 'captain123',
       name: 'Captain User',
       role: 'CAPTAIN' as const,
     },
     {
-      email: 'barista@cafecare.com',
+      email: 'barista@cafesystem.com',
       password: 'barista123',
       name: 'Barista User',
       role: 'CASHIER' as const,
     },
     {
-      email: 'cashier1@cafecare.com',
+      email: 'cashier1@cafesystem.com',
       password: 'cashier123',
       name: 'Sarah Johnson',
       role: 'CASHIER' as const,
     },
     {
-      email: 'cashier2@cafecare.com',
+      email: 'cashier2@cafesystem.com',
       password: 'cashier123',
       name: 'Mike Wilson',
       role: 'CASHIER' as const,
     },
     {
-      email: 'captain1@cafecare.com',
+      email: 'captain1@cafesystem.com',
       password: 'captain123',
       name: 'John Davis',
       role: 'CAPTAIN' as const,
@@ -447,9 +447,9 @@ async function main() {
   console.log(`   🍽️ Menu Items: ${menuCategories.reduce((sum, cat) => sum + cat.menuItems.length, 0)}`);
   console.log('');
   console.log('🔑 Login credentials:');
-  console.log('   Admin: admin@cafecare.com / admin123');
-  console.log('   Captain: captain@cafecare.com / captain123');
-  console.log('   Cashier: cashier1@cafecare.com / cashier123');
+  console.log('   Admin: admin@cafesystem.com / admin123');
+  console.log('   Captain: captain@cafesystem.com / captain123');
+  console.log('   Cashier: cashier1@cafesystem.com / cashier123');
 }
 
 main()

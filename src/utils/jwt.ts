@@ -41,7 +41,7 @@ const JWT_SECRET = process.env.JWT_SECRET
             'Current NODE_ENV: ' + process.env.NODE_ENV
           ); 
         })()
-      : 'cafecare-dev-secret-key-min-32-characters-for-development-only');
+      : 'cafesystem-dev-secret-key-min-32-characters-for-development-only');
 
 // Support both JWT_REFRESH_SECRET (correct) and JWT_REFRESH_SECRE (typo) for backward compatibility
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
@@ -67,16 +67,16 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 export const generateAccessToken = (payload: JWTPayload): string => {
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
-    issuer: 'cafecare-api',
-    audience: 'cafecare-client',
+    issuer: 'cafesystem-api',
+    audience: 'cafesystem-client',
   } as jwt.SignOptions);
 };
 
 export const generateRefreshToken = (payload: JWTPayload): string => {
   return jwt.sign(payload, JWT_REFRESH_SECRET, {
     expiresIn: JWT_REFRESH_EXPIRES_IN,
-    issuer: 'cafecare-api',
-    audience: 'cafecare-client',
+    issuer: 'cafesystem-api',
+    audience: 'cafesystem-client',
   } as jwt.SignOptions);
 };
 

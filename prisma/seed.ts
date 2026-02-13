@@ -16,31 +16,31 @@ async function main() {
   // Create users with different roles
   const users = [
     {
-      email: 'admin@cafecare.com',
+      email: 'admin@cafesystem.com',
       password: 'admin123',
       name: 'Admin User',
       role: 'ADMIN' as const,
     },
     {
-      email: 'captain@cafecare.com',
+      email: 'captain@cafesystem.com',
       password: 'captain123',
       name: 'Captain User',
       role: 'CAPTAIN' as const,
     },
     {
-      email: 'barista@cafecare.com',
+      email: 'barista@cafesystem.com',
       password: 'barista123',
       name: 'Barista User',
       role: 'CASHIER' as const,
     },
     {
-      email: 'john@cafecare.com',
+      email: 'john@cafesystem.com',
       password: 'john123',
       name: 'John Doe',
       role: 'CASHIER' as const,
     },
     {
-      email: 'jane@cafecare.com',
+      email: 'jane@cafesystem.com',
       password: 'jane123',
       name: 'Jane Smith',
       role: 'CASHIER' as const,

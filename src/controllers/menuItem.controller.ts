@@ -180,7 +180,7 @@ export const createMenuItem = async (
     let imageUrl: string | null = null;
 
     if (req.file) {
-      const uploadResult = await uploadToCloudinary(req.file, 'cafecare/menu-items');
+      const uploadResult = await uploadToCloudinary(req.file, 'cafesystem/menu-items');
       imageUrl = uploadResult.secure_url;
     }
 
@@ -282,7 +282,7 @@ export const updateMenuItem = async (
       if (existingMenuItem.image) {
         await deleteFromCloudinary(existingMenuItem.image);
       }
-      const uploadResult = await uploadToCloudinary(req.file, 'cafecare/menu-items');
+      const uploadResult = await uploadToCloudinary(req.file, 'cafesystem/menu-items');
       updateData.image = uploadResult.secure_url;
     }
 

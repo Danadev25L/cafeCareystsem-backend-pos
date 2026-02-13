@@ -17,3 +17,4 @@ CREATE TABLE "DiscountSettings" (
     CONSTRAINT "DiscountSettings_pkey" PRIMARY KEY ("id")
 );
 
+

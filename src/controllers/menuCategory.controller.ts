@@ -131,7 +131,7 @@ export const createMenuCategory = async (
     let imageUrl: string | null = null;
 
     if (req.file) {
-      const uploadResult = await uploadToCloudinary(req.file, 'cafecare/menu-categories');
+      const uploadResult = await uploadToCloudinary(req.file, 'cafesystem/menu-categories');
       imageUrl = uploadResult.secure_url;
     }
 
@@ -200,7 +200,7 @@ export const updateMenuCategory = async (
       if (existingCategory.image) {
         await deleteFromCloudinary(existingCategory.image);
       }
-      const uploadResult = await uploadToCloudinary(req.file, 'cafecare/menu-categories');
+      const uploadResult = await uploadToCloudinary(req.file, 'cafesystem/menu-categories');
       updateData.image = uploadResult.secure_url;
     }
 

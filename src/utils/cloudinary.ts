@@ -17,7 +17,7 @@ export interface UploadResult {
 
 export const uploadToCloudinary = async (
   file: Express.Multer.File,
-  folder: string = 'cafecare'
+  folder: string = 'cafesystem'
 ): Promise<UploadResult> => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(

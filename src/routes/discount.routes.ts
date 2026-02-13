@@ -16,3 +16,4 @@ router.put('/', authenticate, requireAdmin, validate(updateDiscountSettingsValid
 
 export default router;
 
+
