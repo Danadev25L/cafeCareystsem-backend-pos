@@ -66,6 +66,7 @@ model Order {
   tableId         Int?
   status          OrderStatus         @default(PENDING)
   subtotal        Float
+  discount        Float               @default(0)
   serviceCharge   Float               @default(0)
   total           Float
   priority        String              @default("NORMAL")

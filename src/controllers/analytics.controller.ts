@@ -7,6 +7,7 @@ type OrderWithRelations = {
   id: number;
   status: string;
   total: number;
+  discount: number;
   createdAt: Date;
   items: Array<{
     id: number;
@@ -33,6 +34,7 @@ type OrderWithItems = {
   id: number;
   status: string;
   total: number;
+  discount: number;
   createdAt: Date;
   items: Array<{
     id: number;
@@ -50,13 +52,14 @@ type OrderWithItems = {
 interface AnalyticsResponse {
   totalOrders: number;
   totalRevenue: number;
+  totalDiscount: number;
   averageOrderValue: number;
   peakHours: { hour: number; orders: number }[];
   topItems: { id: number; name: string; quantity: number; revenue: number }[];
   ordersByStatus: { status: string; count: number }[];
-  dailyTrends: { date: string; orders: number; revenue: number }[];
+  dailyTrends: { date: string; orders: number; revenue: number; discount: number }[];
   weeklyTrends: { week: string; orders: number; revenue: number }[];
-  monthlyTrends: { month: string; orders: number; revenue: number }[];
+  monthlyTrends: { month: string; orders: number; revenue: number; discount: number }[];
 }
 
 export const getAnalytics = async (
@@ -129,6 +132,7 @@ export const getAnalytics = async (
     // Basic metrics
     const totalOrders = completedOrders.length;
     const totalRevenue = completedOrders.reduce((sum: number, order: OrderWithRelations) => sum + order.total, 0);
+    const totalDiscount = completedOrders.reduce((sum: number, order: OrderWithRelations) => sum + (order.discount || 0), 0);
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     // Peak hours analysis
@@ -180,19 +184,20 @@ export const getAnalytics = async (
     }));
 
     // Daily trends (or monthly trends for year view)
-    let dailyTrendsArray: { date: string; orders: number; revenue: number }[] = [];
-    
+    let dailyTrendsArray: { date: string; orders: number; revenue: number; discount: number }[] = [];
+
     if (period === 'year') {
       // Monthly trends for year view
-      const monthlyTrends: { [key: string]: { orders: number; revenue: number } } = {};
+      const monthlyTrends: { [key: string]: { orders: number; revenue: number; discount: number } } = {};
       completedOrders.forEach((order: OrderWithRelations) => {
         const date = new Date(order.createdAt);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         if (!monthlyTrends[monthKey]) {
-          monthlyTrends[monthKey] = { orders: 0, revenue: 0 };
+          monthlyTrends[monthKey] = { orders: 0, revenue: 0, discount: 0 };
         }
         monthlyTrends[monthKey].orders += 1;
         monthlyTrends[monthKey].revenue += order.total;
+        monthlyTrends[monthKey].discount += order.discount || 0;
       });
 
       // Generate all months for the year, even if no data
@@ -203,18 +208,20 @@ export const getAnalytics = async (
           date: monthName,
           orders: monthlyTrends[monthKey]?.orders || 0,
           revenue: monthlyTrends[monthKey]?.revenue || 0,
+          discount: monthlyTrends[monthKey]?.discount || 0,
         });
       }
     } else {
       // Daily trends for other periods
-      const dailyTrends: { [key: string]: { orders: number; revenue: number } } = {};
+      const dailyTrends: { [key: string]: { orders: number; revenue: number; discount: number } } = {};
       completedOrders.forEach((order: OrderWithRelations) => {
         const date = new Date(order.createdAt).toISOString().split('T')[0];
         if (!dailyTrends[date]) {
-          dailyTrends[date] = { orders: 0, revenue: 0 };
+          dailyTrends[date] = { orders: 0, revenue: 0, discount: 0 };
         }
         dailyTrends[date].orders += 1;
         dailyTrends[date].revenue += order.total;
+        dailyTrends[date].discount += order.discount || 0;
       });
 
       dailyTrendsArray = Object.entries(dailyTrends)
@@ -223,14 +230,15 @@ export const getAnalytics = async (
     }
 
     // Monthly trends (for year view, same as dailyTrends but formatted differently)
-    const monthlyTrendsArray = period === 'year' 
-      ? dailyTrendsArray.map(t => ({ month: t.date, orders: t.orders, revenue: t.revenue }))
+    const monthlyTrendsArray = period === 'year'
+      ? dailyTrendsArray.map(t => ({ month: t.date, orders: t.orders, revenue: t.revenue, discount: t.discount }))
       : [];
 
     // Response data
     const analytics: AnalyticsResponse = {
       totalOrders,
       totalRevenue,
+      totalDiscount,
       averageOrderValue,
       peakHours,
       topItems,

@@ -38,6 +38,10 @@ export const createOrderValidation = [
     .optional()
     .isFloat({ min: 0 })
     .withMessage('Service charge must be a valid number'),
+  body('discount')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Discount must be a valid number'),
   body('total')
     .isFloat({ min: 0 })
     .withMessage('Total must be a valid number'),
@@ -50,7 +54,7 @@ export const createOrder = async (
 ): Promise<void> => {
   try {
     console.log('📦 Creating order - Request body:', JSON.stringify(req.body, null, 2));
-    const { tableId, items, subtotal, serviceCharge, total, priority = 'NORMAL', isRush = false, isWalkIn = false } = req.body;
+    const { tableId, items, subtotal, serviceCharge, discount, total, priority = 'NORMAL', isRush = false, isWalkIn = false } = req.body;
 
     // Handle walk-in orders (no table required)
     const isWalkInOrder = isWalkIn || !tableId || tableId === 0 || tableId === null;
@@ -128,14 +132,16 @@ export const createOrder = async (
     }
 
     const serviceChargeValue = serviceCharge || 0;
+    const discountValue = discount || 0;
     if (!calculatedTotal) {
-      calculatedTotal = calculatedSubtotal + serviceChargeValue;
+      calculatedTotal = calculatedSubtotal - discountValue + serviceChargeValue;
     }
 
     // Create order with items
     console.log('📦 Creating order in database...');
     const orderData: any = {
       subtotal: calculatedSubtotal,
+      discount: discountValue,
       serviceCharge: serviceChargeValue,
       total: calculatedTotal,
       status: OrderStatus.PENDING,
@@ -744,7 +750,7 @@ export const addItemsToOrder = async (
     });
 
     const newSubtotal = allItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
-    const newTotal = newSubtotal + order.serviceCharge;
+    const newTotal = newSubtotal - (order.discount || 0) + order.serviceCharge;
 
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
@@ -850,7 +856,7 @@ export const updateOrderItem = async (
     }
 
     const newSubtotal = allItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
-    const newTotal = newSubtotal + order.serviceCharge;
+    const newTotal = newSubtotal - (order.discount || 0) + order.serviceCharge;
 
     const updatedOrder = await prisma.order.update({
       where: { id: parsedOrderId },
@@ -942,7 +948,7 @@ export const deleteOrderItem = async (
     }
 
     const newSubtotal = allItems.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
-    const newTotal = newSubtotal + order.serviceCharge;
+    const newTotal = newSubtotal - (order.discount || 0) + order.serviceCharge;
 
     const updatedOrder = await prisma.order.update({
       where: { id: parsedOrderId },
@@ -1094,6 +1100,7 @@ export const printReceipt = async (
         total: item.price * item.quantity,
       })),
       subtotal: order.subtotal,
+      discount: order.discount || 0,
       serviceCharge: order.serviceCharge,
       total: order.total,
       status: order.status,
