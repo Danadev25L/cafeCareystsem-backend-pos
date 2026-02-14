@@ -6,6 +6,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Starting database seeding...');
 
+  // Delete all existing users first
+  await prisma.user.deleteMany({});
+  console.log('Deleted all existing users');
+
   // Create users with different roles
   const users = [
     {
@@ -32,14 +36,8 @@ async function main() {
   for (const userData of users) {
     const hashedPassword = await bcrypt.hash(userData.password, 12);
 
-    const user = await prisma.user.upsert({
-      where: { email: userData.email },
-      update: {
-        name: userData.name,
-        role: userData.role,
-        password: hashedPassword,
-      },
-      create: {
+    const user = await prisma.user.create({
+      data: {
         ...userData,
         password: hashedPassword,
       },
