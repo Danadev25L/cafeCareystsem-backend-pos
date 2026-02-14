@@ -6,59 +6,46 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Starting database seeding...');
 
-  // Clear existing data for fresh seed
-  console.log('Clearing existing data...');
-  await prisma.menuItem.deleteMany();
-  await prisma.menuCategory.deleteMany();
-  await prisma.user.deleteMany();
-  console.log('Cleared existing data');
-
   // Create users with different roles
   const users = [
     {
       email: 'admin@cafesystem.com',
       password: 'admin123',
-      name: 'Admin User',
+      name: 'Admin',
       role: 'ADMIN' as const,
     },
     {
       email: 'captain@cafesystem.com',
       password: 'captain123',
-      name: 'Captain User',
+      name: 'Captain',
       role: 'CAPTAIN' as const,
     },
     {
-      email: 'barista@cafesystem.com',
-      password: 'barista123',
-      name: 'Barista User',
-      role: 'CASHIER' as const,
-    },
-    {
-      email: 'john@cafesystem.com',
-      password: 'john123',
-      name: 'John Doe',
-      role: 'CASHIER' as const,
-    },
-    {
-      email: 'jane@cafesystem.com',
-      password: 'jane123',
-      name: 'Jane Smith',
+      email: 'cashier@cafesystem.com',
+      password: 'cashier123',
+      name: 'Cashier',
       role: 'CASHIER' as const,
     },
   ];
 
-  // Hash passwords and create users
+  // Hash passwords and create/update users
   for (const userData of users) {
     const hashedPassword = await bcrypt.hash(userData.password, 12);
 
-    const user = await prisma.user.create({
-      data: {
+    const user = await prisma.user.upsert({
+      where: { email: userData.email },
+      update: {
+        name: userData.name,
+        role: userData.role,
+        password: hashedPassword,
+      },
+      create: {
         ...userData,
         password: hashedPassword,
       },
     });
 
-    console.log(`Created user: ${user.email} (${user.role})`);
+    console.log(`Created/Updated user: ${user.email} (${user.role})`);
   }
 
   console.log('Creating menu categories...');
