@@ -160,7 +160,7 @@ const createMenuItem = async (req, res, next) => {
         const { nameEn, nameKu, nameAr, descriptionEn, descriptionKu, descriptionAr, price, categoryId } = req.body;
         let imageUrl = null;
         if (req.file) {
-            const uploadResult = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'cafecare/menu-items');
+            const uploadResult = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'cafesystem/menu-items');
             imageUrl = uploadResult.secure_url;
         }
         const category = await db_1.prisma.menuCategory.findUnique({
@@ -245,7 +245,7 @@ const updateMenuItem = async (req, res, next) => {
             if (existingMenuItem.image) {
                 await (0, cloudinary_1.deleteFromCloudinary)(existingMenuItem.image);
             }
-            const uploadResult = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'cafecare/menu-items');
+            const uploadResult = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'cafesystem/menu-items');
             updateData.image = uploadResult.secure_url;
         }
         const menuItem = await db_1.prisma.menuItem.update({

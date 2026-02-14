@@ -113,7 +113,7 @@ const createMenuCategory = async (req, res, next) => {
         const { titleEn, titleKu, titleAr, description } = req.body;
         let imageUrl = null;
         if (req.file) {
-            const uploadResult = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'cafecare/menu-categories');
+            const uploadResult = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'cafesystem/menu-categories');
             imageUrl = uploadResult.secure_url;
         }
         const category = await db_1.prisma.menuCategory.create({
@@ -169,7 +169,7 @@ const updateMenuCategory = async (req, res, next) => {
             if (existingCategory.image) {
                 await (0, cloudinary_1.deleteFromCloudinary)(existingCategory.image);
             }
-            const uploadResult = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'cafecare/menu-categories');
+            const uploadResult = await (0, cloudinary_1.uploadToCloudinary)(req.file, 'cafesystem/menu-categories');
             updateData.image = uploadResult.secure_url;
         }
         const category = await db_1.prisma.menuCategory.update({

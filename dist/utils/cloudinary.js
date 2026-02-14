@@ -8,7 +8,7 @@ cloudinary_1.v2.config({
     api_key: process.env.CLOUDINARY_API_KEY || '762454494361861',
     api_secret: process.env.CLOUDINARY_API_SECRET || 'LkFJb6nstGJOBoXzMBXAwZ8N458',
 });
-const uploadToCloudinary = async (file, folder = 'cafecare') => {
+const uploadToCloudinary = async (file, folder = 'cafesystem') => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary_1.v2.uploader.upload_stream({
             folder: folder,

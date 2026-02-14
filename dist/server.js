@@ -184,14 +184,14 @@ app.use(limiter);
 app.get('/health', (req, res) => {
     res.json({
         success: true,
-        message: 'CafeCare API is running',
+        message: 'CafeSystem API is running',
         timestamp: new Date().toISOString(),
     });
 });
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'Welcome to CafeCare API',
+        message: 'Welcome to CafeSystem API',
         version: '1.0.0',
     });
 });
@@ -238,7 +238,7 @@ async function startServer() {
     // Run seeder first if needed
     await runSeederOnDeploy();
     httpServer.listen(port, '0.0.0.0', () => {
-        console.log(`🚀 CafeCare API Server running on port ${port}`);
+        console.log(`🚀 CafeSystem API Server running on port ${port}`);
         console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
         console.log(`Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
     });

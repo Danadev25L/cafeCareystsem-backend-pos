@@ -34,7 +34,7 @@ const JWT_SECRET = process.env.JWT_SECRET
                 'Please set it as an environment variable or in your .env file. ' +
                 'Current NODE_ENV: ' + process.env.NODE_ENV);
         })()
-        : 'cafecare-dev-secret-key-min-32-characters-for-development-only');
+        : 'cafesystem-dev-secret-key-min-32-characters-for-development-only');
 // Support both JWT_REFRESH_SECRET (correct) and JWT_REFRESH_SECRE (typo) for backward compatibility
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
     ? validateJWTSecret(process.env.JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET')
@@ -55,16 +55,16 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 const generateAccessToken = (payload) => {
     return jsonwebtoken_1.default.sign(payload, JWT_SECRET, {
         expiresIn: JWT_EXPIRES_IN,
-        issuer: 'cafecare-api',
-        audience: 'cafecare-client',
+        issuer: 'cafesystem-api',
+        audience: 'cafesystem-client',
     });
 };
 exports.generateAccessToken = generateAccessToken;
 const generateRefreshToken = (payload) => {
     return jsonwebtoken_1.default.sign(payload, JWT_REFRESH_SECRET, {
         expiresIn: JWT_REFRESH_EXPIRES_IN,
-        issuer: 'cafecare-api',
-        audience: 'cafecare-client',
+        issuer: 'cafesystem-api',
+        audience: 'cafesystem-client',
     });
 };
 exports.generateRefreshToken = generateRefreshToken;

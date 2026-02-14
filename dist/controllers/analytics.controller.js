@@ -63,6 +63,7 @@ const getAnalytics = async (req, res, next) => {
         // Basic metrics
         const totalOrders = completedOrders.length;
         const totalRevenue = completedOrders.reduce((sum, order) => sum + order.total, 0);
+        const totalDiscount = completedOrders.reduce((sum, order) => sum + (order.discount || 0), 0);
         const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
         // Peak hours analysis
         const hourlyData = {};
@@ -115,10 +116,11 @@ const getAnalytics = async (req, res, next) => {
                 const date = new Date(order.createdAt);
                 const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 if (!monthlyTrends[monthKey]) {
-                    monthlyTrends[monthKey] = { orders: 0, revenue: 0 };
+                    monthlyTrends[monthKey] = { orders: 0, revenue: 0, discount: 0 };
                 }
                 monthlyTrends[monthKey].orders += 1;
                 monthlyTrends[monthKey].revenue += order.total;
+                monthlyTrends[monthKey].discount += order.discount || 0;
             });
             // Generate all months for the year, even if no data
             for (let month = 0; month < 12; month++) {
@@ -128,6 +130,7 @@ const getAnalytics = async (req, res, next) => {
                     date: monthName,
                     orders: monthlyTrends[monthKey]?.orders || 0,
                     revenue: monthlyTrends[monthKey]?.revenue || 0,
+                    discount: monthlyTrends[monthKey]?.discount || 0,
                 });
             }
         }
@@ -137,10 +140,11 @@ const getAnalytics = async (req, res, next) => {
             completedOrders.forEach((order) => {
                 const date = new Date(order.createdAt).toISOString().split('T')[0];
                 if (!dailyTrends[date]) {
-                    dailyTrends[date] = { orders: 0, revenue: 0 };
+                    dailyTrends[date] = { orders: 0, revenue: 0, discount: 0 };
                 }
                 dailyTrends[date].orders += 1;
                 dailyTrends[date].revenue += order.total;
+                dailyTrends[date].discount += order.discount || 0;
             });
             dailyTrendsArray = Object.entries(dailyTrends)
                 .map(([date, data]) => ({ date, ...data }))
@@ -148,12 +152,13 @@ const getAnalytics = async (req, res, next) => {
         }
         // Monthly trends (for year view, same as dailyTrends but formatted differently)
         const monthlyTrendsArray = period === 'year'
-            ? dailyTrendsArray.map(t => ({ month: t.date, orders: t.orders, revenue: t.revenue }))
+            ? dailyTrendsArray.map(t => ({ month: t.date, orders: t.orders, revenue: t.revenue, discount: t.discount }))
             : [];
         // Response data
         const analytics = {
             totalOrders,
             totalRevenue,
+            totalDiscount,
             averageOrderValue,
             peakHours,
             topItems,

@@ -38,6 +38,10 @@ exports.createOrderValidation = [
         .optional()
         .isFloat({ min: 0 })
         .withMessage('Service charge must be a valid number'),
+    (0, express_validator_1.body)('discount')
+        .optional()
+        .isFloat({ min: 0 })
+        .withMessage('Discount must be a valid number'),
     (0, express_validator_1.body)('total')
         .isFloat({ min: 0 })
         .withMessage('Total must be a valid number'),
@@ -45,7 +49,7 @@ exports.createOrderValidation = [
 const createOrder = async (req, res, next) => {
     try {
         console.log('📦 Creating order - Request body:', JSON.stringify(req.body, null, 2));
-        const { tableId, items, subtotal, serviceCharge, total, priority = 'NORMAL', isRush = false, isWalkIn = false } = req.body;
+        const { tableId, items, subtotal, serviceCharge, discount, total, priority = 'NORMAL', isRush = false, isWalkIn = false } = req.body;
         // Handle walk-in orders (no table required)
         const isWalkInOrder = isWalkIn || !tableId || tableId === 0 || tableId === null;
         const finalTableId = isWalkInOrder ? null : tableId;
@@ -105,13 +109,15 @@ const createOrder = async (req, res, next) => {
             calculatedSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
         }
         const serviceChargeValue = serviceCharge || 0;
+        const discountValue = discount || 0;
         if (!calculatedTotal) {
-            calculatedTotal = calculatedSubtotal + serviceChargeValue;
+            calculatedTotal = calculatedSubtotal - discountValue + serviceChargeValue;
         }
         // Create order with items
         console.log('📦 Creating order in database...');
         const orderData = {
             subtotal: calculatedSubtotal,
+            discount: discountValue,
             serviceCharge: serviceChargeValue,
             total: calculatedTotal,
             status: types_1.OrderStatus.PENDING,
@@ -644,7 +650,7 @@ const addItemsToOrder = async (req, res, next) => {
             where: { orderId },
         });
         const newSubtotal = allItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const newTotal = newSubtotal + order.serviceCharge;
+        const newTotal = newSubtotal - (order.discount || 0) + order.serviceCharge;
         const updatedOrder = await db_1.prisma.order.update({
             where: { id: orderId },
             data: {
@@ -736,7 +742,7 @@ const updateOrderItem = async (req, res, next) => {
             throw new errors_1.NotFoundError('Order not found');
         }
         const newSubtotal = allItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const newTotal = newSubtotal + order.serviceCharge;
+        const newTotal = newSubtotal - (order.discount || 0) + order.serviceCharge;
         const updatedOrder = await db_1.prisma.order.update({
             where: { id: parsedOrderId },
             data: {
@@ -814,7 +820,7 @@ const deleteOrderItem = async (req, res, next) => {
             throw new errors_1.NotFoundError('Order not found');
         }
         const newSubtotal = allItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const newTotal = newSubtotal + order.serviceCharge;
+        const newTotal = newSubtotal - (order.discount || 0) + order.serviceCharge;
         const updatedOrder = await db_1.prisma.order.update({
             where: { id: parsedOrderId },
             data: {
@@ -947,6 +953,7 @@ const printReceipt = async (req, res, next) => {
                 total: item.price * item.quantity,
             })),
             subtotal: order.subtotal,
+            discount: order.discount || 0,
             serviceCharge: order.serviceCharge,
             total: order.total,
             status: order.status,
