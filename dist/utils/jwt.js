@@ -71,8 +71,8 @@ exports.generateRefreshToken = generateRefreshToken;
 const verifyAccessToken = (token) => {
     try {
         return jsonwebtoken_1.default.verify(token, JWT_SECRET, {
-            issuer: 'cafecare-api',
-            audience: 'cafecare-client',
+            issuer: 'cafesystem-api',
+            audience: 'cafesystem-client',
         });
     }
     catch (error) {
@@ -83,8 +83,8 @@ exports.verifyAccessToken = verifyAccessToken;
 const verifyRefreshToken = (token) => {
     try {
         return jsonwebtoken_1.default.verify(token, JWT_REFRESH_SECRET, {
-            issuer: 'cafecare-api',
-            audience: 'cafecare-client',
+            issuer: 'cafesystem-api',
+            audience: 'cafesystem-client',
         });
     }
     catch (error) {

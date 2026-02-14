@@ -83,8 +83,8 @@ export const generateRefreshToken = (payload: JWTPayload): string => {
 export const verifyAccessToken = (token: string): JWTPayload => {
   try {
     return jwt.verify(token, JWT_SECRET, {
-      issuer: 'cafecare-api',
-      audience: 'cafecare-client',
+      issuer: 'cafesystem-api',
+      audience: 'cafesystem-client',
     }) as JWTPayload;
   } catch (error) {
     throw new Error('Invalid or expired access token');
@@ -94,8 +94,8 @@ export const verifyAccessToken = (token: string): JWTPayload => {
 export const verifyRefreshToken = (token: string): JWTPayload => {
   try {
     return jwt.verify(token, JWT_REFRESH_SECRET, {
-      issuer: 'cafecare-api',
-      audience: 'cafecare-client',
+      issuer: 'cafesystem-api',
+      audience: 'cafesystem-client',
     }) as JWTPayload;
   } catch (error) {
     throw new Error('Invalid or expired refresh token');
